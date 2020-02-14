@@ -3,6 +3,7 @@ import { SessionChat } from "../model/SessionChat";
 import { User } from "../model/User";
 import { Bilhete } from "../model/Bilhete";
 import { ValidacaoCadastro } from "../model/ValidateResgistered";
+import { CreditCard } from "../model/CardCreditUser";
 
 
 export const sequelize = new Sequelize({
@@ -15,4 +16,4 @@ export const sequelize = new Sequelize({
     password: "MKTz@zz1"
 });
 
-sequelize.addModels([SessionChat, User, Bilhete, ValidacaoCadastro]);
+sequelize.addModels([SessionChat, User, Bilhete, ValidacaoCadastro, CreditCard]);

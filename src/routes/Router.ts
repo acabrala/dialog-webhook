@@ -12,11 +12,11 @@ router.post("/chatboot", async (req, res) => {
 
     const intentName = await req.body.queryResult.intent.displayName;
     const sessionUser = req.body['session'];
-
-    console.log(intentName);
-
+ 
     if (intentName != null) {
 
+        console.log(intentName);
+        
         const payload = {
             intentName: intentName,
             sessionUser: sessionUser
@@ -39,7 +39,6 @@ router.post("/chatboot", async (req, res) => {
             const propertiesDevices = req.body.originalDetectIntentRequest.payload.surface.capabilities.map(item => item.name).includes('actions.capability.SCREEN_OUTPUT');
             if (propertiesDevices === true) {
 
-                console.log(payload)
                 const mobile = new MobileController()
                 mobile.verifyIntent(req, res, payload);
             } else {

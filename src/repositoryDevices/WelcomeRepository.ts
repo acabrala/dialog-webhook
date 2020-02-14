@@ -67,4 +67,10 @@ export class WelcomeMobileRepository {
     return await User.findOne({where: {cpf: cpf}})
 
   }
+
+  userUpdateData = async (userCpf, email) => {
+
+    let cpf = {cpf: userCpf}
+    return await User.update(cpf, { where:{ email: email}})
+  }
 }

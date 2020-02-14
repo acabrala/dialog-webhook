@@ -1,4 +1,4 @@
-import { Table, Column, Model } from 'sequelize-typescript';
+import { Table, Column, Model, AutoIncrement, DataType } from 'sequelize-typescript';
 
 @Table({
     tableName: "bilhete_unico"
@@ -6,8 +6,9 @@ import { Table, Column, Model } from 'sequelize-typescript';
 
 export class Bilhete extends Model<Bilhete> {
 
-    @Column({primaryKey: true})
-    id: string; 
+    @AutoIncrement
+    @Column({primaryKey: true, type: DataType.INTEGER})
+    id: number; 
 
     @Column
     id_usuario: string;
@@ -19,7 +20,16 @@ export class Bilhete extends Model<Bilhete> {
     flag_bilhete_unico: boolean;
 
     @Column
-    apelido: string
+    apelido: string;
+
+    @Column({defaultValue: 'Bilhete Único'})
+    tipo_cartao: string;
+
+    @Column({defaultValue: 'SP'})
+    estado: string;
+
+    @Column({defaultValue: true })
+    flag_carteira_comum: boolean
 
 }
 

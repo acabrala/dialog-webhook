@@ -7,6 +7,9 @@ import { ResponseEventParameters } from '../responsesMobile/responseEventsParame
 import { ResponseFulfillmentText } from '../responsesMobile/responseFulfillment';
 import { BilheteRepository } from '../repositoryDevices/BilheteUnicoRepository';
 import axios from 'axios';
+import * as bcrypt from 'bcryptjs';
+import { ValidationMobileRepository } from '../repositoryDevices/ValidationMobileRepository';
+import { CardCreditRepository } from '../repositoryDevices/CardCreditRepository';
 
 export class MobileController {
 
@@ -51,7 +54,6 @@ export class MobileController {
                     if (updateCpf) {
 
                         const resEvent = ResponseEvent("identificacao-nome");
-                        console.log(resEvent)
                         return res.json(resEvent)
                     }
 
@@ -68,7 +70,6 @@ export class MobileController {
                     const updateNome = welcome.userSessionUpdate(nome, data.sessionUser);
                     if (updateNome) {
                         const resEvent = ResponseEvent("identificacao-email")
-                        console.log(resEvent)
                         return res.json(resEvent)
 
                     }
@@ -82,7 +83,6 @@ export class MobileController {
                 try {
                     let email = { email: req.body.queryResult.parameters['id-email'] }
 
-                    console.log(email)
                     const welcome = new WelcomeMobileRepository();
                     const updateEmail = await welcome.userSessionUpdate(email, data.sessionUser)
                     if (updateEmail) {
@@ -164,15 +164,11 @@ export class MobileController {
                                     return `${index.dataValues.numero} - ${index.dataValues.apelido}`;
                                 })
 
-                                console.log(cartoes)
-
                                 const sugestao = cartoes.map(item => {
                                     return { title: item }
                                 })
 
                                 sugestao.push({ title: "cadastrar bilhete" });
-
-                                console.log(Object.values(sugestao))
 
                                 return res.json(ResponseQuickDefault(`Escolha qual bilhete você deseja carregar`, Object.values(sugestao)))
 
@@ -182,12 +178,110 @@ export class MobileController {
                 }
 
                 break;
+
+
+            case 'cad.incompleto.sim':
+                const usuario = new WelcomeMobileRepository();
+                const usuarioDados = await usuario.userSessionGetData(data.sessionUser);
+
+                var randoms = [...Array(3)].map(() =>
+                    Math.floor(Math.random() * 99 + 1).toFixed(0)
+                );
+
+                const sugestao = randoms.map(item => {
+                    return { title: String(item) }
+                })
+                var posicao = Math.floor(Math.random() * 3 + 0).toFixed(0);
+                let numeroEnviado = randoms[posicao];
+
+                if (usuarioDados) {
+
+                    const token = new ValidationMobileRepository();
+                    const gerarToekn = await token.createTokenMail(data.sessionUser, usuarioDados.dataValues.email, numeroEnviado);
+                    if (gerarToekn) {
+                        const resposta = ResponseQuickDefault("Agora escolha uma opção.", sugestao)
+                        return res.json(resposta)
+                    }
+
+                }
+
+                break;
+
+            case 'cad.incompleto.sim.validacao':
+                try {
+                    let codeUser = req.body.queryResult.parameters["id-validacao"];
+                    const token = new ValidationMobileRepository()
+                    const tokenUser = await token.getTokenMail(data.sessionUser)
+                    if (tokenUser) {
+                        let tokenBd = tokenUser.dataValues.token;
+
+                        if (codeUser === tokenBd) {
+                            const user = new WelcomeMobileRepository();
+                            const userData = await user.userSessionGetData(data.sessionUser);
+                            if (userData) {
+                                const email = userData.dataValues.email;
+                                const cpf = userData.dataValues.cpf;
+
+                                const userUpdate = await user.userUpdateData(cpf, email)
+                                if (userUpdate) {
+                                    const resposta = ResponseEvent("dados_compra");
+                                    return res.json(resposta)
+                                }
+                            }
+                        }
+                    }
+                } catch (e) {
+
+                }
+
+                break;
+
+            case 'dados.compra.cadastrar.bilhete':
+                try {
+
+                    console.log(req.body.queryResult.parameters);
+
+                    let numberCard = req.body.queryResult.parameters["id-bilhete"];
+                    let user = new WelcomeMobileRepository;
+                    let userData = await user.userSessionGetData(data.sessionUser);
+                    if (userData) {
+                        let bu = new BilheteRepository;
+                        let saveCard = await bu.saveBilheteUSer(numberCard, userData.dataValues.id_usuario)
+                        if (saveCard) {
+                            const resposta = ResponseFulfillmentText('Agora dê um apelido para seu bilhete');
+                            return res.json(resposta)
+                        }
+                    }
+
+                } catch (e) {
+
+                }
+                break;
+            case 'dados.compra.cadastrar.apelido':
+                try {
+                    let apelido = req.body.queryResult.parameters["id-apelido"];
+
+                    let user = new WelcomeMobileRepository;
+                    let userData = await user.userSessionGetData(data.sessionUser);
+                    if (userData) {
+                        let bu = new BilheteRepository;
+                        let updateCard = await bu.updateBilhete(apelido, userData.dataValues.id_usuario)
+                        if (updateCard) {
+                            console.log('askdajsd');
+
+                        }
+                    }
+
+                } catch (e) {
+
+                }
+                break;
+
             case 'dados.pagamento':
 
                 return res.json(ResponseQuickDefault(`Escolha seu cartão`, [{ title: `5307********8017` },
                 { title: `4830********2652` },
                 { title: `cadastrar cartão` }]))
-
 
             case 'dados.compra.valor':
 
@@ -197,6 +291,60 @@ export class MobileController {
                 const cartaoCred = req.body.queryResult.parameters["id-cartao"];
 
                 return res.json(ResponseEvent(`pagamento_cvv`))
+            case 'dados.pagamento.numero':
+                try {
+                    console.log(req.body.queryResult.parameters);
+
+                    const numberCardCredit = req.body.queryResult.parameters['id-nr-cartao'];
+                    const numeroCartao = numberCardCredit.toString()
+                    const numberCardHidden = await numeroCartao.replace(/(?<=\d{6})\d(?=\d{4})/g, "*");
+
+                    const salt = bcrypt.genSaltSync(15)
+                    const hashCard = await bcrypt.hashSync(numeroCartao, salt);
+
+                    let user = new WelcomeMobileRepository;
+                    let userData = await user.userSessionGetData(data.sessionUser);
+                    if (userData) {
+                        let payload = { hash_cartao: hashCard, numero_cartao: numberCardHidden, id_usuario: userData.dataValues.id_usuario }
+                        console.log(payload);
+
+                        let creditCard = new CardCreditRepository();
+                        let saveCardCredit = await creditCard.saveCreditCart(payload)
+                        if (saveCardCredit) {
+                            const resposta = ResponseEvent('dados_pagamento_nome');
+                            return res.json(resposta)
+                        }
+                    }
+
+                } catch (e) {
+
+                }
+                break;
+            case 'dados.pagamento.nome':
+                try {
+
+                } catch (e) {
+
+                }
+                break;
+            case 'dados.pagamento.data':
+                try {
+
+                } catch (e) {
+
+                }
+
+                break
+
+            case 'dados.pagamento.cvv':
+                try {
+
+                } catch (e) {
+
+                }
+
+                break
+
             case 'dados.pagamento.cadastrado.cvv':
                 let cvv = req.body.queryResult.parameters["id-cvv"];
 
@@ -204,11 +352,6 @@ export class MobileController {
                     axios.get(`https://demo2790047.mockable.io/pedido`).then(result => {
                         if (result) {
                             res.json({
-                                fulfillmentText: `Pedido - ${
-                                    result.data["numero-pedido"]
-                                    }`,
-                                fulfillmentMessages: [],
-                                source: "example.com",
                                 payload: {
                                     google: {
                                         expectUserResponse: true,
@@ -248,9 +391,7 @@ export class MobileController {
             default:
                 return null;
         }
-
     }
-
 }
 
 export default MobileController;

@@ -3,11 +3,11 @@ import { WelcomeHomeRepository } from "../repositoryHome/WelcomeHomeRepository";
 import { ResponseEvent } from "../responsesMobile/responseEvents";
 import { ResponseFulfillmentText } from "../responsesMobile/responseFulfillment";
 import { ValidationHomeRepository } from "../repositoryHome/ValidationHomeRepository"
+import { BilheteHomeRepository } from "../repositoryHome/BilheteRepository";
 
 class homeController {
 
     verificarIntent = async (req, res, data) => {
-        console.log(data)
         switch (data.intentName) {
             case 'Default Welcome Intent':
                 try {
@@ -72,12 +72,18 @@ class homeController {
                     const welcome = new WelcomeHomeRepository()
                     const getUser = await welcome.getDataUser(data.sessionUser)
                     if (getUser) {
+
                         const email = getUser.dataValues.email;
                         const emailSeparado = email.split('@');
-                        const emailFinal = emailSeparado[0].substring(emailSeparado[0].length - 5, emailSeparado[0].length)
+                        const emailFinal = emailSeparado[0].substring(emailSeparado[0].length - 5, emailSeparado[0].length);
+                        var randoms = [...Array(3)].map(() =>
+                            Math.floor(Math.random() * 99 + 1).toFixed(0)
+                        );
+                        var posicao = Math.floor(Math.random() * 3 + 0).toFixed(0);
+                        let numeroEnviado = randoms[posicao];
 
                         const tokenEmail = new ValidationHomeRepository();
-                        const userToken = await tokenEmail.createTokenMail(data.sessionUser, email)
+                        const userToken = await tokenEmail.createTokenMail(data.sessionUser, email, numeroEnviado)
                         if (userToken) {
 
                             const resText = ResponseFulfillmentText(`Certo enviei um código para o email de final ${emailFinal}, poderia confirmar`)
@@ -114,14 +120,35 @@ class homeController {
 
             case 'dados.compra.home':
                 try {
-                    
-                } catch(e) {
+                    const user = new WelcomeHomeRepository()
+                    const getUser = await user.getDataUser(data.sessionUser);
+                    if (getUser) {
+                        const card = new BilheteHomeRepository();
+                        const getCard = await card.getBilheteUser(getUser.dataValues.id)
+                        if (getCard) {
+
+                            let cartoes = getCard.map(index => {
+                                return index.dataValues.apelido;
+                            })
+
+                            if (cartoes) {
+                                const resposta = ResponseFulfillmentText(`Quais dos seguintes bilhetes deseja carregar ${cartoes[0]}  ou ${cartoes[1]} ?`)
+                                return res.json(resposta)
+                            }
+                        }
+
+                    }
+
+                } catch (e) {
 
                 }
-                
 
+                break;
+            case 'dados.pagamento.home':
+                try {
+                } catch (e) {
 
-
+                }
 
                 break;
         }

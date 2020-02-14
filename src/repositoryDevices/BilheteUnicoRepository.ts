@@ -10,4 +10,20 @@ export class BilheteRepository {
             {flag_bilhete_unico: true}
         ]}})
     }
+
+    saveBilheteUSer = async (bu, id_user) => {
+        console.log("chagando aqui")
+        let payload = {numero: bu, id_usuario: id_user, flag_bilhete_unico: true}
+        return await Bilhete.create(payload)
+    }
+
+    updateBilhete = async (apelido, id_user) => {''
+
+        console.log(apelido);
+        
+        
+        let payload = {apelido: apelido}
+        return await Bilhete.update(payload, {where: {id_usuario: id_user, apelido: null}})
+
+    }
 }

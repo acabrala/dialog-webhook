@@ -1,6 +1,6 @@
 import Mail from '../services/mail'
 import { ValidacaoCadastro } from '../model/ValidateResgistered'
-export class ValidationHomeRepository {
+export class ValidationMobileRepository {
 
     createTokenMail = async (session, email, token) => {
 
